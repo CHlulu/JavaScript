@@ -33,24 +33,29 @@ function autoPost(ID) {
           $notification.post(ID, '不存在该TF', '已自动删除该APP_ID')
           resolve()
         } else {
-          let jsonData = JSON.parse(data)
-          if (jsonData.data == null) {
-            console.log(ID + ': ' + jsonData.messages[0].message)
+          try {
+            let jsonData = JSON.parse(data)
+            if (jsonData.data == null) {
+              console.log(ID + ': ' + jsonData.messages[0].message)
+              resolve();
+            } else if (jsonData.data.status == 'FULL') {
+              var name = jsonData.data.app.name
+              console.log(name + ' (' + ID + '): ' + jsonData.data.message)
+              resolve();
+            } else {
+              $httpClient.post({url: testurl + ID + '/accept',headers: header}, function(error, resp, body) {
+                let appName = JSON.parse(body).data.name
+                $notification.post('🎉' + appName, 'TestFlight加入成功', '')
+                console.log('🎉' + appName + '🎉' + ' (' + ID + '): ' + ' TestFlight加入成功')
+                ids = $persistentStore.read('APP_ID').split(',')
+                ids = ids.filter(ids => ids !== ID)
+                $persistentStore.write(ids.toString(),'APP_ID')
+                resolve()
+              });
+            }
+          } catch (e) {
+            console.log(ID + ': 返回内容不是JSON，内容为：' + data)
             resolve();
-          } else if (jsonData.data.status == 'FULL') {
-            var name = jsonData.data.app.name
-            console.log(name + ' (' + ID + '): ' + jsonData.data.message)
-            resolve();
-          } else {
-            $httpClient.post({url: testurl + ID + '/accept',headers: header}, function(error, resp, body) {
-              let appName = JSON.parse(body).data.name
-              $notification.post('🎉' + appName, 'TestFlight加入成功', '')
-              console.log('🎉' + appName + '🎉' + ' (' + ID + '): ' + ' TestFlight加入成功')
-              ids = $persistentStore.read('APP_ID').split(',')
-              ids = ids.filter(ids => ids !== ID)
-              $persistentStore.write(ids.toString(),'APP_ID')
-              resolve()
-            });
           }
         }
       } else {
@@ -68,4 +73,4 @@ function autoPost(ID) {
       }
     })
   })
-}
+} 
